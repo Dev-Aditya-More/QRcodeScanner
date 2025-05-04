@@ -1,7 +1,6 @@
 package com.example.qrcodescanner
 
 import android.content.Intent
-import android.net.Uri
 import android.util.Patterns
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -21,23 +20,29 @@ import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
 
 @Composable
-fun CameraWithOverlayUI() {
+fun CameraWithOverlayUI(onScanned: (String) -> Unit) {
     val context = LocalContext.current
-    var qrCodeText by remember { mutableStateOf("Scan a QR code") }
+    var isScanned by remember { mutableStateOf(false) }
 
     Box(modifier = Modifier.fillMaxSize()) {
-        cameraPreview(onQRCodeScanned = { scannedCode ->
-            qrCodeText = scannedCode
+        if (!isScanned) {
+            cameraPreview(onQRCodeScanned = { scannedCode ->
+                isScanned = true
+                onScanned(scannedCode)
 
-            // Check if it's a valid URL and open it
-            if (Patterns.WEB_URL.matcher(scannedCode).matches()) {
-                val intent = Intent(Intent.ACTION_VIEW, scannedCode.toUri())
-                context.startActivity(intent)
-            }
-        })
-        QRCodeOverlay(text = qrCodeText)
+                // ✅ Automatically open scanned URL if it's valid
+                if (Patterns.WEB_URL.matcher(scannedCode).matches()) {
+                    val intent = Intent(Intent.ACTION_VIEW, scannedCode.toUri())
+                    context.startActivity(intent)
+                }
+            })
+        }
+
+        // Optional overlay while scanning
+        QRCodeOverlay(text = "Scanning...")
     }
 }
+
 
 @Composable
 fun cameraPreview(onQRCodeScanned: (String) -> Unit) {
